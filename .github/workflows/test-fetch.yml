@@ -1,0 +1,21 @@
+name: Connectivity test
+
+on:
+  workflow_dispatch: {}   # lets you run it manually from the Actions tab
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Try fetching Sezane
+        run: |
+          URL="https://www.sezane.com/us-en/product/mila-basket/natural-ochre"
+          code=$(curl -s -o page.html -w "%{http_code}" \
+            -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" \
+            -H "Accept-Language: en-US,en;q=0.9" "$URL")
+          echo "HTTP status: $code"
+          echo "Bytes downloaded: $(wc -c < page.html)"
+          echo "--- availability meta tag (want to see this) ---"
+          grep -oE '<meta property="product:availability"[^>]*>' page.html || echo "(no availability meta found)"
+          echo "--- block/captcha markers (do NOT want these) ---"
+          grep -oiE 'captcha|access denied|are you a robot|datadome|cloudflare' page.html | sort | uniq -c || echo "(none found - good)"
