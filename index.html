@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Restock Monitor</title>
+<style>
+  :root{
+    --bg:#f6f5f2; --card:#ffffff; --ink:#20201d; --muted:#7a766e;
+    --line:#e7e4dd; --accent:#8a5a3b; --accent-ink:#fff;
+    --in:#1f8a4c; --in-bg:#e6f4ea; --out:#8a8a8a; --out-bg:#eeecea;
+    --res:#b7791f; --res-bg:#fbf1dc; --pending:#9a96b0; --pending-bg:#eeedf4;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.45;padding:24px}
+  .wrap{max-width:920px;margin:0 auto}
+  header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+  h1{font-size:1.6rem;margin:0;letter-spacing:.3px}
+  .sub{color:var(--muted);font-size:.9rem;margin:0 0 20px}
+  form.add{display:flex;gap:8px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:12px;margin-bottom:22px}
+  form.add input{flex:1;min-width:180px;border:1px solid var(--line);border-radius:10px;
+    padding:11px 12px;font-size:.95rem;background:#fff;color:var(--ink)}
+  form.add input#label{flex:0 0 200px}
+  button{border:0;border-radius:10px;padding:11px 16px;font-size:.95rem;font-weight:600;cursor:pointer}
+  .primary{background:var(--accent);color:var(--accent-ink)}
+  .primary:disabled{opacity:.5;cursor:default}
+  .ghost{background:transparent;color:var(--muted);padding:6px 10px;font-weight:500}
+  #msg{min-height:20px;font-size:.88rem;margin:-12px 2px 16px;color:var(--muted)}
+  .grid{display:grid;gap:14px}
+  .item{display:flex;gap:14px;background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:14px;align-items:center}
+  .thumb{width:74px;height:74px;flex:0 0 74px;border-radius:10px;object-fit:cover;
+    background:#efece7 center/cover no-repeat;border:1px solid var(--line)}
+  .thumb.ph{display:flex;align-items:center;justify-content:center;color:#bbb;font-size:1.5rem}
+  .info{flex:1;min-width:0}
+  .name{font-weight:600;font-size:1.02rem;margin:0 0 3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .store{color:var(--muted);font-size:.82rem;text-transform:uppercase;letter-spacing:.5px}
+  .meta{color:var(--muted);font-size:.8rem;margin-top:6px}
+  .row2{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
+  .badge{display:inline-block;font-size:.78rem;font-weight:700;padding:4px 10px;border-radius:999px}
+  .b-in{color:var(--in);background:var(--in-bg)} .b-out{color:var(--out);background:var(--out-bg)}
+  .b-res{color:var(--res);background:var(--res-bg)} .b-pending{color:var(--pending);background:var(--pending-bg)}
+  a.view{font-size:.82rem;color:var(--accent);text-decoration:none;font-weight:600}
+  a.view:hover{text-decoration:underline}
+  .empty{text-align:center;color:var(--muted);padding:40px 10px}
+  .foot{color:var(--muted);font-size:.78rem;text-align:center;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🧺 Restock Monitor</h1>
+    <button class="ghost" id="refresh">↻ Refresh</button>
+  </header>
+  <p class="sub">Paste a product link to start watching it. Your Mac checks each one every ~30 minutes and pushes your phone the moment it's back in stock.</p>
+
+  <form class="add" id="addForm">
+    <input type="url" id="url" placeholder="Paste a product URL…" required>
+    <input type="text" id="label" placeholder="Nickname (optional)">
+    <button class="primary" type="submit" id="addBtn">Add</button>
+  </form>
+  <div id="msg"></div>
+
+  <div class="grid" id="grid"></div>
+  <p class="foot">Statuses and thumbnails fill in after the next background check. Newly added links show “Pending” until then.</p>
+</div>
+
+<script>
+const SUPABASE_URL = "https://wazcubfmmevaxzxfanee.supabase.co";
+const KEY = "sb_publishable_xrlS4_EU_5N01f6zG5tHAA_Hw0wyL5X";
+const HEADERS = {apikey:KEY, Authorization:"Bearer "+KEY, "Content-Type":"application/json"};
+const REST = SUPABASE_URL + "/rest/v1/watches";
+
+const grid = document.getElementById("grid");
+const msg = document.getElementById("msg");
+const setMsg = (t) => { msg.textContent = t || ""; };
+
+function fmt(ts){
+  if(!ts) return "—";
+  const d = new Date(ts);
+  return d.toLocaleString([], {month:"short", day:"numeric", hour:"numeric", minute:"2-digit"});
+}
+function badge(status){
+  const s = (status||"").toLowerCase();
+  if(s === "in stock")     return '<span class="badge b-in">In stock</span>';
+  if(s === "reserved")     return '<span class="badge b-res">In someone\'s basket</span>';
+  if(s === "out of stock") return '<span class="badge b-out">Out of stock</span>';
+  return '<span class="badge b-pending">Pending first check</span>';
+}
+function esc(s){ const d=document.createElement("div"); d.textContent=s==null?"":s; return d.innerHTML; }
+
+async function load(){
+  try{
+    const r = await fetch(REST + "?select=*&order=created_at.desc", {headers:HEADERS});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    render(await r.json());
+  }catch(e){ setMsg("Couldn't load your list: "+e.message); }
+}
+
+function render(items){
+  if(!items.length){ grid.innerHTML = '<div class="empty">No items yet — paste a link above to start watching.</div>'; return; }
+  grid.innerHTML = items.map(w => {
+    const name = w.label || "(name loads after first check)";
+    const thumb = w.image_url
+      ? `<img class="thumb" src="${esc(w.image_url)}" alt="" onerror="this.classList.add('ph');this.removeAttribute('src');this.textContent='🛍️'">`
+      : `<div class="thumb ph">🛍️</div>`;
+    const seen = w.status==="in stock" && w.last_available_at ? `Last available: ${fmt(w.last_available_at)}`
+               : w.status==="reserved" && w.last_reserved_at ? `Last reserved: ${fmt(w.last_reserved_at)}`
+               : w.last_available_at ? `Last available: ${fmt(w.last_available_at)}` : "";
+    return `<div class="item">
+      ${thumb}
+      <div class="info">
+        <div class="store">${esc(w.store || "")}</div>
+        <p class="name" title="${esc(name)}">${esc(name)}</p>
+        <div class="row2">${badge(w.status)} <a class="view" href="${esc(w.url)}" target="_blank" rel="noopener">View product ↗</a></div>
+        <div class="meta">Checked: ${fmt(w.last_checked)}${seen ? " · "+seen : ""}</div>
+      </div>
+      <button class="ghost" onclick="removeItem(${w.id})">Remove</button>
+    </div>`;
+  }).join("");
+}
+
+async function removeItem(id){
+  if(!confirm("Stop watching this item?")) return;
+  try{
+    const r = await fetch(REST + "?id=eq."+id, {method:"DELETE", headers:HEADERS});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    load();
+  }catch(e){ setMsg("Couldn't remove: "+e.message); }
+}
+
+document.getElementById("addForm").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const url = document.getElementById("url").value.trim();
+  const label = document.getElementById("label").value.trim();
+  if(!url) return;
+  const btn = document.getElementById("addBtn");
+  btn.disabled = true; setMsg("Adding…");
+  const body = {url}; if(label) body.label = label;
+  try{
+    const r = await fetch(REST, {method:"POST", headers:{...HEADERS, Prefer:"return=representation"}, body:JSON.stringify(body)});
+    if(!r.ok){ const t = await r.text(); throw new Error(t.includes("duplicate") ? "You're already watching that link." : "HTTP "+r.status); }
+    document.getElementById("url").value = ""; document.getElementById("label").value = "";
+    setMsg("Added! It'll be checked on the next run.");
+    load();
+  }catch(e){ setMsg("Couldn't add: "+e.message); }
+  finally{ btn.disabled = false; }
+});
+
+document.getElementById("refresh").addEventListener("click", load);
+load();
+setInterval(load, 60000);
+</script>
+</body>
+</html>
