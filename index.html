@@ -42,7 +42,7 @@
   .underbtn:disabled{color:var(--muted);border-bottom-color:var(--rule);cursor:default}
 
   /* ---- add form ---- */
-  form.add{display:flex;gap:14px;align-items:flex-end;margin-bottom:14px;flex-wrap:wrap}
+  form.add{display:flex;gap:14px;align-items:flex-end;margin:48px 0 14px;flex-wrap:wrap}
   .field{display:flex;flex-direction:column;gap:7px;flex:1;min-width:200px}
   .field.nick{flex:0 0 190px}
   .field > span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;
@@ -114,8 +114,6 @@
   <header>
     <h1>Restock Monitor</h1>
   </header>
-
-  <p class="sub">Paste a product link to start watching it. Your Mac checks each one every ~30 minutes and pushes your phone the moment it's back in stock.</p>
 
   <form class="add" id="addForm">
     <label class="field">
