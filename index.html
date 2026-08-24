@@ -47,7 +47,9 @@
     background:#efece7 center/cover no-repeat;border:1px solid var(--line)}
   .thumb.ph{display:flex;align-items:center;justify-content:center;color:#bbb;font-size:1.5rem}
   .info{flex:1;min-width:0}
-  .name{font-weight:600;font-size:1.02rem;margin:0 0 3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .name{display:block;font-weight:600;font-size:1.02rem;margin:0 0 5px;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap;color:var(--ink);text-decoration:none}
+  .name:hover{color:var(--accent);text-decoration:underline}
   .store{color:var(--muted);font-size:.82rem;text-transform:uppercase;letter-spacing:.5px}
   .meta{color:var(--muted);font-size:.8rem;margin-top:6px}
   .row2{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
@@ -141,8 +143,7 @@ function render(items){
       ${thumb}
       <div class="info">
         <div class="store">${esc(w.store || "")}</div>
-        <p class="name" title="${esc(name)}">${esc(name)}</p>
-        <div class="row2"><a class="view" href="${esc(w.url)}" target="_blank" rel="noopener">View product ↗</a></div>
+        <a class="name" href="${esc(w.url)}" target="_blank" rel="noopener" title="${esc(name)}">${esc(name)}</a>
         <div class="meta">${checkedLine}${seen ? " · "+seen : ""}</div>
       </div>
       <div class="status-col">${badge(w)}</div>
