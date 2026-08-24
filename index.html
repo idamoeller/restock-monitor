@@ -4,89 +4,141 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Restock Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=Work+Sans:wght@300..700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#f6f5f2; --card:#ffffff; --ink:#20201d; --muted:#7a766e;
-    --line:#e7e4dd; --accent:#8a5a3b; --accent-ink:#fff;
-    --in:#1f8a4c; --in-bg:#e6f4ea; --out:#8a8a8a; --out-bg:#eeecea;
-    --res:#b7791f; --res-bg:#fbf1dc; --pending:#9a96b0; --pending-bg:#eeedf4;
-    --check:#3a6ea5; --check-bg:#e6eef6;
+    --paper:#faf8f4; --ink:#1c1a17; --ink-2:#5c574d; --muted:#78726a; --faint:#a09a8e;
+    --rule:#e7e2d8; --field:#c9c2b4; --accent:#2f5d45; --accent-soft:#b9cdc2;
+    --in:#2f7d4f; --res:#a97613; --out:#6f6a60; --out-dot:#c9c2b4; --check:#3a6ea5;
+    --sans:'Work Sans',system-ui,-apple-system,sans-serif;
+    --serif:'Libre Caslon Display',Georgia,serif;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    line-height:1.45;padding:24px}
-  .wrap{max-width:920px;margin:0 auto}
-  header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px}
-  h1{font-size:1.6rem;margin:0;letter-spacing:.3px}
-  .sub{color:var(--muted);font-size:.9rem;margin:0 0 20px}
-  form.add{display:flex;gap:8px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);
-    border-radius:14px;padding:12px;margin-bottom:10px}
-  form.add input{flex:1;min-width:180px;border:1px solid var(--line);border-radius:10px;
-    padding:11px 12px;font-size:.95rem;background:#fff;color:var(--ink)}
-  form.add input#label{flex:0 0 200px}
-  button{border:0;border-radius:10px;padding:11px 16px;font-size:.95rem;font-weight:600;cursor:pointer}
-  .primary{background:var(--accent);color:var(--accent-ink)}
-  .primary:disabled{opacity:.5;cursor:default}
-  .ghost{background:transparent;color:var(--muted);padding:6px 10px;font-weight:500}
-  .actions{display:flex;flex-direction:column;align-items:center;gap:7px;margin:4px 2px 20px;text-align:center}
-  .checkbtn{background:transparent;color:var(--accent);border:1px solid var(--accent);
-    border-radius:999px;padding:9px 24px;font-weight:600}
-  .checkbtn:hover{background:var(--accent);color:#fff}
-  .checkbtn:disabled{opacity:.45;cursor:default}
-  .note{color:var(--muted);font-size:.82rem}
-  #msg{min-height:20px;font-size:.88rem;margin:0 2px 16px;color:var(--muted)}
-  .grid{display:grid;gap:14px}
-  .item{display:flex;gap:14px;background:var(--card);border:1px solid var(--line);
-    border-radius:14px;padding:14px;align-items:center;position:relative}
-  .close{position:absolute;top:6px;right:9px;background:transparent;color:#c3bdb2;
-    font-size:1.2rem;line-height:1;padding:2px 7px;border-radius:8px;font-weight:400}
-  .close:hover{color:var(--accent);background:#f0ece6}
-  .status-col{flex:0 0 auto;display:flex;align-items:center;padding:0 6px 0 8px}
-  .thumb{width:74px;height:74px;flex:0 0 74px;border-radius:10px;object-fit:cover;
-    background:#efece7 center/cover no-repeat;border:1px solid var(--line)}
-  .thumb.ph{display:flex;align-items:center;justify-content:center;color:#bbb;font-size:1.5rem}
-  .info{flex:1;min-width:0}
-  .name{display:block;font-weight:600;font-size:1.02rem;margin:0 0 5px;overflow:hidden;
-    text-overflow:ellipsis;white-space:nowrap;color:var(--ink);text-decoration:none}
-  .name:hover{color:var(--accent);text-decoration:underline}
-  .store{color:var(--muted);font-size:.82rem;text-transform:uppercase;letter-spacing:.5px}
-  .meta{color:var(--muted);font-size:.8rem;margin-top:6px}
-  .row2{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
-  .badge{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;font-weight:700;padding:4px 10px;border-radius:999px}
-  .b-in{color:var(--in);background:var(--in-bg)} .b-out{color:var(--out);background:var(--out-bg)}
-  .b-res{color:var(--res);background:var(--res-bg)} .b-pending{color:var(--pending);background:var(--pending-bg)}
-  .b-check{color:var(--check);background:var(--check-bg)}
-  .spin{width:11px;height:11px;border:2px solid currentColor;border-right-color:transparent;
-    border-radius:50%;display:inline-block;animation:sp .7s linear infinite}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+    font-size:14.5px;line-height:1.55;padding:44px 24px 64px;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:760px;margin:0 auto}
+
+  /* ---- masthead ---- */
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;
+    padding-bottom:22px;border-bottom:1px solid var(--ink)}
+  h1{margin:0;font-family:var(--serif);font-size:34px;font-weight:400;line-height:1;letter-spacing:-.01em}
+  .sub{margin:20px 0 34px;font-size:14.5px;line-height:1.6;color:var(--ink-2);max-width:52ch;text-wrap:pretty}
+
+  /* ---- buttons ---- */
+  button{font-family:var(--sans);cursor:pointer}
+  .primary{background:none;color:var(--ink);border:1px solid var(--ink);border-radius:2px;
+    padding:10px 24px;font-size:13.5px;font-weight:500;letter-spacing:.02em}
+  .primary:hover{background:var(--ink);color:var(--paper)}
+  .primary:disabled{opacity:.35;cursor:default;background:none;color:var(--ink)}
+  .underbtn{background:none;border:0;padding:0 0 2px;font-family:var(--mono);font-size:10px;
+    font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);
+    border-bottom:1px solid var(--accent-soft)}
+  .underbtn:hover{border-bottom-color:var(--accent)}
+  .underbtn:disabled{color:var(--muted);border-bottom-color:var(--rule);cursor:default}
+
+  /* ---- add form ---- */
+  form.add{display:flex;gap:14px;align-items:flex-end;margin-bottom:14px;flex-wrap:wrap}
+  .field{display:flex;flex-direction:column;gap:7px;flex:1;min-width:200px}
+  .field.nick{flex:0 0 190px}
+  .field > span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted)}
+  .field input{border:0;border-bottom:1px solid var(--field);background:none;
+    padding:7px 2px;font-family:var(--sans);font-size:14.5px;color:var(--ink);outline:none;width:100%}
+  .field input::placeholder{color:var(--faint)}
+  .field input:focus{border-bottom-color:var(--accent)}
+
+  #msg{min-height:18px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;
+    color:var(--muted);margin:22px 0 16px}
+  #msg:empty{margin:22px 0 16px}
+
+  /* ---- list ---- */
+  .listhead{display:grid;grid-template-columns:1fr auto 1fr;align-items:baseline;gap:12px;
+    padding-bottom:9px;border-bottom:1px solid var(--ink);font-family:var(--mono);
+    font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+  .listhead .count{color:var(--muted);text-align:right}
+  .item{display:flex;gap:20px;align-items:center;padding:18px 0;
+    border-bottom:1px solid var(--rule);position:relative}
+  .thumb{width:58px;height:58px;flex:0 0 58px;object-fit:cover;border:1px solid #ded9cf;
+    background:repeating-linear-gradient(135deg,#efebe2 0 6px,#e6e1d6 6px 12px)}
+  .info{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+  .store{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--faint)}
+  .name{font-size:16px;font-weight:500;letter-spacing:-.005em;color:var(--ink);
+    text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .name:hover{color:var(--accent)}
+  .meta{font-size:12px;color:var(--muted)}
+  .status{flex:0 0 auto;display:flex;align-items:center;gap:9px;padding-left:8px}
+  .dot{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
+  .label{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.1em;
+    text-transform:uppercase;width:112px;line-height:1.35}
+  .s-in .dot{background:var(--in)} .s-in .label{color:var(--in)}
+  .s-res .dot{background:var(--res)} .s-res .label{color:var(--res)}
+  .s-out .dot{background:var(--out-dot)} .s-out .label{color:var(--out)}
+  .s-pending .dot{background:var(--field)} .s-pending .label{color:var(--muted)}
+  .s-check .label{color:var(--check)}
+  .spin{width:9px;height:9px;flex:0 0 9px;border:1.5px solid var(--check);
+    border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite}
   @keyframes sp{to{transform:rotate(360deg)}}
-  a.view{font-size:.82rem;color:var(--accent);text-decoration:none;font-weight:600}
-  a.view:hover{text-decoration:underline}
-  .empty{text-align:center;color:var(--muted);padding:40px 10px}
-  .foot{color:var(--muted);font-size:.78rem;text-align:center;margin-top:24px}
+
+  .close{position:absolute;top:14px;right:0;background:none;border:0;padding:2px 4px;
+    font-family:var(--sans);font-size:16px;line-height:1;color:var(--faint);opacity:0;transition:opacity .12s}
+  .item:hover .close,.close:focus{opacity:1}
+  .close:hover{color:var(--accent)}
+
+  .empty{padding:44px 0;border-bottom:1px solid var(--rule);color:var(--muted);font-size:13.5px}
+  .foot{margin:26px 0 0;font-size:11.5px;line-height:1.6;color:var(--faint);max-width:56ch}
+
+  @media (max-width:640px){
+    body{padding:32px 20px 56px;font-size:14px}
+    h1{font-size:27px}
+    header{align-items:center}
+    form.add{gap:18px}
+    .field,.field.nick{flex:1 1 100%}
+    .primary{flex:1 1 100%;padding:13px 26px}
+    .item{gap:14px;flex-wrap:wrap;padding:16px 0}
+    .thumb{width:48px;height:48px;flex:0 0 48px}
+    .info{flex:1 1 auto}
+    .status{flex:1 1 100%;padding-left:0}
+    .label{width:auto}
+    .close{opacity:1;top:16px}
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <h1>Restock Monitor</h1>
-    <button class="ghost" id="refresh">↻ Refresh list</button>
   </header>
+
   <p class="sub">Paste a product link to start watching it. Your Mac checks each one every ~30 minutes and pushes your phone the moment it's back in stock.</p>
 
   <form class="add" id="addForm">
-    <input type="url" id="url" placeholder="Paste a product URL…" required>
-    <input type="text" id="label" placeholder="Nickname (optional)">
+    <label class="field">
+      <span>Product URL</span>
+      <input type="url" id="url" placeholder="Paste a product URL…" required>
+    </label>
+    <label class="field nick">
+      <span>Nickname</span>
+      <input type="text" id="label" placeholder="Optional">
+    </label>
     <button class="primary" type="submit" id="addBtn">Add</button>
   </form>
-  <div class="actions">
-    <button class="checkbtn" id="checkBtn" type="button">Check all now</button>
-    <span class="note">Checks every item now — usually within a minute.</span>
-  </div>
+
   <div id="msg"></div>
 
-  <div class="grid" id="grid"></div>
-  <p class="foot">“Refresh list” just reloads saved statuses. “Check all now” triggers a fresh live check on your Mac.</p>
+  <div class="listhead">
+    <span>Watching</span>
+    <button class="underbtn" id="checkBtn" type="button">Check all now</button>
+    <span class="count" id="count"></span>
+  </div>
+  <div id="grid"></div>
+
+  <p class="foot">The list reloads saved statuses on its own every minute. “Check all now” triggers a fresh live check on your Mac.</p>
 </div>
 
 <script>
@@ -97,23 +149,24 @@ const REST = SUPABASE_URL + "/rest/v1/watches";
 
 const grid = document.getElementById("grid");
 const msg = document.getElementById("msg");
+const count = document.getElementById("count");
 const checkBtn = document.getElementById("checkBtn");
 const setMsg = (t) => { msg.textContent = t || ""; };
 
-let checking = false;          // are we in a "Check all now" run?
-let checkStartedAt = 0;        // when we requested it (ms)
+let checking = false;
+let checkStartedAt = 0;
 
 function fmt(ts){
   if(!ts) return "—";
   return new Date(ts).toLocaleString([], {month:"short", day:"numeric", hour:"numeric", minute:"2-digit"});
 }
-function badge(w){
-  if(!w.last_checked) return '<span class="badge b-check"><span class="spin"></span>Checking…</span>';
+function status(w){
+  if(!w.last_checked) return {cls:"s-check", mark:'<span class="spin"></span>', text:"Checking…"};
   const s = (w.status||"").toLowerCase();
-  if(s === "in stock")     return '<span class="badge b-in">In stock</span>';
-  if(s === "reserved")     return '<span class="badge b-res">In someone\'s basket</span>';
-  if(s === "out of stock") return '<span class="badge b-out">Out of stock</span>';
-  return '<span class="badge b-pending">Pending first check</span>';
+  if(s === "in stock")     return {cls:"s-in",  mark:'<span class="dot"></span>', text:"In stock"};
+  if(s === "reserved")     return {cls:"s-res", mark:'<span class="dot"></span>', text:"In someone's basket"};
+  if(s === "out of stock") return {cls:"s-out", mark:'<span class="dot"></span>', text:"Out of stock"};
+  return {cls:"s-pending", mark:'<span class="dot"></span>', text:"Pending first check"};
 }
 function esc(s){ const d=document.createElement("div"); d.textContent=s==null?"":s; return d.innerHTML; }
 
@@ -128,25 +181,29 @@ async function load(){
 }
 
 function render(items){
-  if(!items.length){ grid.innerHTML = '<div class="empty">No items yet — paste a link above to start watching.</div>'; return; }
+  count.textContent = items.length ? String(items.length).padStart(2,"0") : "00";
+  if(!items.length){
+    grid.innerHTML = '<div class="empty">No items yet — paste a link above to start watching.</div>';
+    return;
+  }
   grid.innerHTML = items.map(w => {
-    const name = w.label || "Checking…";
+    const name = w.label || w.url.replace(/^https?:\/\/(www\.)?/,"");
+    const st = status(w);
     const thumb = w.image_url
-      ? `<img class="thumb" src="${esc(w.image_url)}" alt="" onerror="this.classList.add('ph');this.removeAttribute('src');this.textContent='🛍️'">`
-      : `<div class="thumb ph">🛍️</div>`;
-    const seen = w.status==="in stock" && w.last_available_at ? `Last available: ${fmt(w.last_available_at)}`
-               : w.status==="reserved" && w.last_reserved_at ? `Last reserved: ${fmt(w.last_reserved_at)}`
-               : w.last_available_at ? `Last available: ${fmt(w.last_available_at)}` : "";
-    const checkedLine = !w.last_checked ? "Checking now…" : `Checked: ${fmt(w.last_checked)}`;
+      ? `<img class="thumb" src="${esc(w.image_url)}" alt="" onerror="this.removeAttribute('src')">`
+      : `<div class="thumb"></div>`;
+    const seen = w.status==="reserved" && w.last_reserved_at ? `Last reserved ${fmt(w.last_reserved_at)}`
+               : w.last_available_at ? `Last available ${fmt(w.last_available_at)}` : "";
+    const checkedLine = !w.last_checked ? "Checking now…" : `Checked ${fmt(w.last_checked)}`;
     return `<div class="item">
-      <button class="close" title="Stop watching" onclick="removeItem(${w.id})">×</button>
+      <button class="close" title="Stop watching" aria-label="Stop watching ${esc(name)}" onclick="removeItem(${w.id})">×</button>
       ${thumb}
       <div class="info">
-        <div class="store">${esc(w.store || "")}</div>
+        <div class="store">${esc(w.store || "—")}</div>
         <a class="name" href="${esc(w.url)}" target="_blank" rel="noopener" title="${esc(name)}">${esc(name)}</a>
         <div class="meta">${checkedLine}${seen ? " · "+seen : ""}</div>
       </div>
-      <div class="status-col">${badge(w)}</div>
+      <div class="status ${st.cls}">${st.mark}<span class="label">${st.text}</span></div>
     </div>`;
   }).join("");
 }
@@ -163,7 +220,6 @@ async function removeItem(id){
 async function checkNow(){
   if(checking) return;
   try{
-    // Mark every item as due, so the Mac's agent re-checks it on its next pass.
     const r = await fetch(REST + "?id=gt.0", {
       method:"PATCH", headers:{...HEADERS, Prefer:"return=minimal"},
       body: JSON.stringify({last_checked:null})
@@ -186,8 +242,8 @@ async function pollUntilDone(){
   const elapsed = Date.now() - checkStartedAt;
 
   if(pending.length === 0){
-    finishChecking("All items checked ✓");
-  }else if(elapsed > 150000){          // ~2.5 min safety timeout
+    finishChecking("All items checked");
+  }else if(elapsed > 150000){
     finishChecking("Still working — your Mac may be asleep or busy. It'll finish on its own.");
   }else{
     setMsg(`Checking… ${items.length - pending.length}/${items.length} done`);
@@ -222,7 +278,6 @@ document.getElementById("addForm").addEventListener("submit", async (ev) => {
 });
 
 checkBtn.addEventListener("click", checkNow);
-document.getElementById("refresh").addEventListener("click", () => { if(!checking) load(); });
 load();
 setInterval(() => { if(!checking) load(); }, 60000);
 </script>
