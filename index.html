@@ -172,7 +172,7 @@ function status(w){
   if(!w.last_checked) return {cls:"s-check", mark:'<span class="spin"></span>', text:"Checking…"};
   const s = (w.status||"").toLowerCase();
   if(s === "in stock")     return {cls:"s-in",  mark:'<span class="dot"></span>', text:"In stock"};
-  if(s === "reserved")     return {cls:"s-res", mark:'<span class="dot"></span>', text:"In someone's basket"};
+  if(s === "reserved")     return {cls:"s-res", mark:'<span class="dot"></span>', text:"In another cart"};
   if(s === "out of stock") return {cls:"s-out", mark:'<span class="dot"></span>', text:"Out of stock"};
   return {cls:"s-pending", mark:'<span class="dot"></span>', text:"Pending first check"};
 }
