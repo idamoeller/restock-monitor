@@ -116,8 +116,12 @@
   .pausebtn:hover{color:var(--accent)}
   .item.paused{opacity:.5}
   .item.paused .pausebtn{opacity:1;color:var(--accent)}
-  .settingsbar{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin:0 0 12px;
+  .settingsbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 12px;
     font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .pauseall{background:none;border:0;padding:0 0 2px;font-family:var(--mono);font-size:10px;
+    font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+    border-bottom:1px solid var(--rule);cursor:pointer}
+  .pauseall:hover{color:var(--accent);border-bottom-color:var(--accent-soft)}
   .settingsbar select{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;
     color:var(--ink);background:none;border:0;border-bottom:1px solid var(--field);padding:2px 4px;cursor:pointer}
   .settingsbar select:focus{outline:none;border-bottom-color:var(--accent)}
@@ -161,14 +165,17 @@
 
   <div id="msg"></div>
 
-  <div class="settingsbar"><span>Check every</span><select id="interval" aria-label="Check interval">
+  <div class="settingsbar">
+    <button class="pauseall" id="pauseAll" type="button">Pause all</button>
+    <span>Check every <select id="interval" aria-label="Check interval">
     <option value="30">30 min</option>
     <option value="60">1 hour</option>
     <option value="120">2 hours</option>
     <option value="180">3 hours</option>
     <option value="360">6 hours</option>
     <option value="720">12 hours</option>
-  </select></div>
+  </select></span>
+  </div>
 
   <div class="listhead">
     <span>Watching</span>
@@ -192,6 +199,7 @@ const grid = document.getElementById("grid");
 const msg = document.getElementById("msg");
 const count = document.getElementById("count");
 const checkBtn = document.getElementById("checkBtn");
+const pauseAllBtn = document.getElementById("pauseAll");
 const setMsg = (t) => { msg.textContent = t || ""; };
 
 let checking = false;
@@ -256,6 +264,8 @@ async function load(){
 
 function render(items){
   count.textContent = items.length ? String(items.length).padStart(2,"0") : "00";
+  pauseAllBtn.hidden = !items.length;
+  pauseAllBtn.textContent = items.some(w => !w.paused) ? "Pause all" : "Resume all";
   if(!items.length){
     grid.innerHTML = '<div class="empty">No items yet — paste a link above to start watching.</div>';
     return;
@@ -378,6 +388,17 @@ document.getElementById("addForm").addEventListener("submit", async (ev) => {
     else { load(); }
   }catch(e){ setMsg("Couldn't add: "+e.message); }
   finally{ btn.disabled = false; }
+});
+
+pauseAllBtn.addEventListener("click", async () => {
+  const target = allItems.some(w => !w.paused);  // any active -> pause all; else resume all
+  try{
+    const r = await fetch(REST + "?id=gt.0", {method:"PATCH",
+      headers:{...HEADERS, Prefer:"return=minimal"}, body:JSON.stringify({paused: target})});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    setMsg(target ? "Paused all." : "Resumed all.");
+    load();
+  }catch(e){ setMsg("Couldn't update: "+e.message); }
 });
 
 checkBtn.addEventListener("click", checkNow);
