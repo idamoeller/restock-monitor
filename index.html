@@ -109,6 +109,18 @@
     font-family:var(--sans);font-size:16px;line-height:1;color:var(--faint);opacity:0;transition:opacity .12s}
   .item:hover .close,.close:focus{opacity:1}
   .close:hover{color:var(--accent)}
+  .pausebtn{position:absolute;top:15px;right:26px;background:none;border:0;padding:2px 4px;
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--faint);opacity:0;transition:opacity .12s}
+  .item:hover .pausebtn{opacity:1}
+  .pausebtn:hover{color:var(--accent)}
+  .item.paused{opacity:.5}
+  .item.paused .pausebtn{opacity:1;color:var(--accent)}
+  .settingsbar{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin:0 0 12px;
+    font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .settingsbar select{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--ink);background:none;border:0;border-bottom:1px solid var(--field);padding:2px 4px;cursor:pointer}
+  .settingsbar select:focus{outline:none;border-bottom-color:var(--accent)}
 
   .empty{padding:44px 0;border-bottom:1px solid var(--rule);color:var(--muted);font-size:13.5px}
   .foot{margin:26px 0 0;font-size:11.5px;line-height:1.6;color:var(--faint);max-width:56ch}
@@ -149,6 +161,15 @@
 
   <div id="msg"></div>
 
+  <div class="settingsbar"><span>Check every</span><select id="interval" aria-label="Check interval">
+    <option value="30">30 min</option>
+    <option value="60">1 hour</option>
+    <option value="120">2 hours</option>
+    <option value="180">3 hours</option>
+    <option value="360">6 hours</option>
+    <option value="720">12 hours</option>
+  </select></div>
+
   <div class="listhead">
     <span>Watching</span>
     <button class="underbtn" id="checkBtn" type="button">Check all now</button>
@@ -165,6 +186,7 @@ const SUPABASE_URL = "https://wazcubfmmevaxzxfanee.supabase.co";
 const KEY = "sb_publishable_xrlS4_EU_5N01f6zG5tHAA_Hw0wyL5X";
 const HEADERS = {apikey:KEY, Authorization:"Bearer "+KEY, "Content-Type":"application/json"};
 const REST = SUPABASE_URL + "/rest/v1/watches";
+const SETTINGS = SUPABASE_URL + "/rest/v1/settings";
 
 const grid = document.getElementById("grid");
 const msg = document.getElementById("msg");
@@ -245,9 +267,11 @@ function render(items){
       ? `<img class="thumb" src="${esc(w.image_url)}" alt="" onerror="this.removeAttribute('src')">`
       : `<div class="thumb"></div>`;
     const sub = subLine(w);
-    const checkedLine = !w.last_checked ? "Checking now…" : `Checked ${fmt(w.last_checked)}`;
-    return `<div class="item">
+    const paused = !!w.paused;
+    const checkedLine = paused ? "Paused" : (!w.last_checked ? "Checking now…" : `Checked ${fmt(w.last_checked)}`);
+    return `<div class="item${paused ? ' paused' : ''}">
       <button class="close" title="Stop watching" aria-label="Stop watching ${esc(name)}" onclick="removeItem(${w.id})">×</button>
+      <button class="pausebtn" onclick="togglePause(${w.id}, ${paused})">${paused ? 'Resume' : 'Pause'}</button>
       ${thumb}
       <div class="info">
         <div class="store">${esc(w.store || "—")}</div>
@@ -270,6 +294,31 @@ async function removeItem(id){
     load();
   }catch(e){ setMsg("Couldn't remove: "+e.message); }
 }
+
+async function togglePause(id, currentlyPaused){
+  try{
+    const r = await fetch(REST + "?id=eq."+id, {method:"PATCH",
+      headers:{...HEADERS, Prefer:"return=minimal"}, body:JSON.stringify({paused: !currentlyPaused})});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    load();
+  }catch(e){ setMsg("Couldn't update pause: "+e.message); }
+}
+
+async function loadSettings(){
+  try{
+    const r = await fetch(SETTINGS + "?select=*&id=eq.1", {headers:HEADERS});
+    if(r.ok){ const rows = await r.json(); if(rows[0]) document.getElementById("interval").value = String(rows[0].check_interval_minutes); }
+  }catch(e){}
+}
+document.getElementById("interval").addEventListener("change", async (e) => {
+  const v = parseInt(e.target.value, 10);
+  try{
+    const r = await fetch(SETTINGS + "?id=eq.1", {method:"PATCH",
+      headers:{...HEADERS, Prefer:"return=minimal"}, body:JSON.stringify({check_interval_minutes:v})});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    setMsg("Now checking every " + e.target.selectedOptions[0].text + ".");
+  }catch(err){ setMsg("Couldn't update interval: "+err.message); }
+});
 
 async function checkNow(){
   if(checking) return;
@@ -332,6 +381,7 @@ document.getElementById("addForm").addEventListener("submit", async (ev) => {
 });
 
 checkBtn.addEventListener("click", checkNow);
+loadSettings();
 load();
 setInterval(() => { if(!checking) load(); }, 60000);
 </script>
