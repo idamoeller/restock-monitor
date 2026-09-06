@@ -294,7 +294,7 @@ function render(items){
       <div class="info">
         <div class="store">${esc(w.store || "—")}</div>
         <a class="name" href="${esc(w.url)}" target="_blank" rel="noopener" title="${esc(name)}">${esc(name)}</a>
-        <div class="meta">${checkedLine}${paused ? "" : ` · <select class="ivl-item" aria-label="Check interval for this item" onchange="setItemInterval(${w.id}, this.value)">${ivlOptions(w.check_interval_minutes)}</select>`}</div>
+        <div class="meta">${checkedLine} · <select class="ivl-item" aria-label="Check interval for this item" onchange="setItemInterval(${w.id}, this.value)">${ivlOptions(w.check_interval_minutes)}</select></div>
       </div>
       <div class="status ${st.cls}">
         <div class="status-row">${st.mark}<span class="label">${st.text}</span></div>
